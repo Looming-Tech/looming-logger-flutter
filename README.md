@@ -2,6 +2,13 @@
 
 Remote logging SDK for Flutter apps. Sends logs to a self-hosted Loki backend with automatic batching, offline persistence, and device info collection.
 
+## Related SDKs
+
+| Platform | Repository |
+|----------|------------|
+| Flutter | [looming-logger](https://github.com/Looming-Tech/looming-logger) |
+| Swift (iOS) | [looming-logger-swift](https://github.com/stefanminch/looming-logger-swift) |
+
 ## Features
 
 - Automatic device info collection (platform, OS version, model, device ID, etc.)
