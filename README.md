@@ -6,8 +6,8 @@ Remote logging SDK for Flutter apps. Sends logs to a self-hosted Loki backend wi
 
 | Platform | Repository |
 |----------|------------|
-| Flutter | [looming-logger](https://github.com/Looming-Tech/looming-logger) |
-| Swift (iOS) | [looming-logger-swift](https://github.com/Looming-Tech/looming-logger-swift) |
+| Flutter | [looming-logger](https://github.com/Looming-Tech/looming-logger-flutter) |
+| Swift (iOS) | [looming-logger-swift](https://github.com/Looming-Tech/looming-logger-flutter-swift) |
 
 ## Features
 
@@ -25,7 +25,7 @@ Add to your `pubspec.yaml`:
 dependencies:
   looming_logger:
     git:
-      url: https://github.com/Looming-Tech/looming-logger.git
+      url: https://github.com/Looming-Tech/looming-logger-flutter.git
 ```
 
 Then run `flutter pub get`.
