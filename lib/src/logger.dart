@@ -225,6 +225,21 @@ class LoomingLogger {
   Future<void> _flush() async {
     if (_queue.isEmpty) return;
 
+    // Drop entries older than 50 minutes — Loki rejects samples older than
+    // 1h ("entry too far behind") and a single rejected entry fails the
+    // whole batch. Without this, a one-time flush failure poisons the
+    // queue forever: persisted entries age past the threshold, every
+    // subsequent flush gets 400, and we re-queue back to the front.
+    final cutoff = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(minutes: 50))
+        .toIso8601String();
+    _queue.removeWhere((log) {
+      final ts = log['timestamp'] as String?;
+      return ts != null && ts.compareTo(cutoff) < 0;
+    });
+    if (_queue.isEmpty) return;
+
     final batch = List<Map<String, dynamic>>.from(_queue);
     _queue.clear();
 
@@ -240,8 +255,13 @@ class LoomingLogger {
           )
           .timeout(Duration(seconds: _config.httpTimeoutSeconds));
 
+      if (response.statusCode >= 400 && response.statusCode < 500) {
+        // 4xx is a permanent rejection — re-queueing would loop forever.
+        // Drop the batch.
+        return;
+      }
       if (response.statusCode != 201) {
-        // Re-queue on failure
+        // 5xx / transient — retry on next flush.
         _queue.insertAll(0, batch);
         await _saveQueueToDisk();
       }
@@ -272,7 +292,19 @@ class LoomingLogger {
       final stored = prefs.getString(_storageKey);
       if (stored != null) {
         final list = jsonDecode(stored) as List;
-        _queue.addAll(list.cast<Map<String, dynamic>>());
+        // Drop any persisted entries older than 50 minutes — Loki will
+        // reject them with "entry too far behind" and fail the whole
+        // batch. See _flush() for the same guard.
+        final cutoff = DateTime.now()
+            .toUtc()
+            .subtract(const Duration(minutes: 50))
+            .toIso8601String();
+        for (final raw in list.cast<Map<String, dynamic>>()) {
+          final ts = raw['timestamp'] as String?;
+          if (ts == null || ts.compareTo(cutoff) >= 0) {
+            _queue.add(raw);
+          }
+        }
         await prefs.remove(_storageKey);
       }
     } catch (_) {}
